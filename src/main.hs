@@ -6,53 +6,53 @@ type Memory = [(Int,Int)]
 
 type PC = Int
 
-type Reg = Int
+type MemoryPos = Int
+
+data Reg = Reg { 
+    name :: String,
+    value :: Int
+} deriving Show
 
 type Flag = Bool
 
+
 data CPU = CPU {
-    instructionReg :: InstructionReg,
-    acc :: Reg
+    instructionReg :: IReg,
+    pc :: PC
 }
 
 type Registers = [Reg]
 
-data InstructionReg = InstructionReg{
-    code :: Int,
-    address :: Int
-}
+-- Instructions register
+type IReg = Reg
 
-data InstructionReg = InstructionReg{
-    code = 0,
-    address = 0
+data ULA = ULA{
+    eqz :: Flag,
+    acc :: Reg
+} deriving Show
+
+data Computer = Computer{
+    cpu :: CPU,
+    mem :: Memory,
+    ula :: ULA,
+    registers :: Registers
 }
 
 --data Instruction 
 
 --Começo do computador
 
-createMem :: Memory 
-
-createMem = [(x,y) | x <- [0], y <- [0..255]]
 
 
-createEqz :: Flag
+main  :: IO()
 
-createEqz = True
-
-createACC :: Reg
-
-createACC = 0
-
-createPC :: PC
- 
-createPC = 0
-
-createCPU :: CPU
-
-createCPU = CPU 0
+main = do
+    let mem = [(x,y) | x <- [0], y <- [0..255]]
+    let ula = ULA{eqz = True, acc = Reg{name = "acc", value = 0}}
 
 
+    print mem
+    print ula
 
 
 
