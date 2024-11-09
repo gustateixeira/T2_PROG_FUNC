@@ -1,59 +1,13 @@
 --Definição dos tipos
 
 
-
-
-
-
-
-
-
-type Flag = Bool
-
-data CPU = CPU {
-    instructionReg :: Int,
-    pc :: Int,
-    rdm :: Int,
-    rem' :: Int
-}deriving Show
-
-
-data ULA = ULA{
-    eqz :: Bool,
-    acc :: Int
-} deriving Show
-
-data Computer = Computer{
-    cpu :: CPU,
-    mem :: [(Int,Int)],
-    ula :: ULA
-}deriving Show
-
---Criação da instrução 
-
-
-
-
---Começo do computador
-
-
-
-
-createComputer :: CPU-> [(Int,Int)]-> ULA-> Computer
-createComputer c m u = Computer{cpu = c, mem = m, ula = u}
-
-createCpu :: CPU
-createCpu = CPU{instructionReg = 0, 
-            pc = 0,
-            rdm = 0, 
-            rem' = 0}
-
-
--- Criação das instruções
+type Reg = Int
 
 --LOD
-execLOD :: Int -> ([(Int,Int)], Int, Bool) -> ([(Int,Int)], Int, Bool)
+execLOD :: Int -> ([(Int,Int)], Reg, Bool) -> ([(Int,Int)], Int, Bool)
 execLOD end (mem, acc, eqz) = (mem, readMem mem end, eqz)
+
+
 
 --JMP
 -- readMem [(0,10),(1,3),(2,23),(10,100)] 1 = 3
@@ -67,7 +21,7 @@ readMem (m:ms) end
 
 
 --Escrita da memória
-execSto :: [(Int,Int)] -> Int -> Int -> [(Int,Int)]
+execSto :: [(Int,Int)] -> Int -> Reg -> [(Int,Int)]
 execSto (m:ms) end acc | end == fst m = [(fst m, acc)] ++ ms
                        | end /= fst m = m : execSto ms end acc
 
@@ -98,7 +52,7 @@ execNop :: Int
 execNop = 0
 
 execHlt :: String 
-execHlt = "Programa encerrado.  "
+execHlt = "Programa encerrado."
 
 
 
@@ -107,25 +61,27 @@ setAcc f end acc= f end acc
 
 
 
---exec :: [(Int,Int)] -> [(Int,Int)]
-
+exec :: Reg -> Bool -> [(Int,Int)] -> [(Int,Int)] 
+exec acc eqz (m:ms)  | snd m == 2 = let (mem,acc , _) = execLOD (snd (head(ms))) ([m]++ms,acc,eqz)
+                            in mem
+        
+--[(0,2), (1,240)]
+-- (m:ms)
+-- m = (0,2)
+-- ms = [(1,240)]
 
 main  :: IO()
 
-main = do
-    let mem = [(x,y) | x <- [0..255], y <- [0]]
-    let ula = ULA{eqz = True, acc = 0}
-    let instruction_register =  0
-    let cpu = createCpu
-    let computer = createComputer cpu mem ula
-    let afterWriting = execSto mem 3 10
-    let exc = execLOD 2 (mem, (acc ula), (eqz ula))
-    let excJmp = execJmp 2 (pc cpu)
-    print afterWriting
-    print (readMem mem 2)
-    let execjmz = execJmz 
+--acc = posição 100
 
-    print excJmp
+main = do
+    let mem = [(0,2),(1,240),(2,14),(3,241),(4,4),(5,251),(6,20),(7,18),(240,10),(241,1),(251,0)]
+    let acc = 0
+    let eqz = True
+    let newMem = exec acc eqz mem
+    print acc
+    print newMem
+
 
 
 
