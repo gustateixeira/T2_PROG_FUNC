@@ -1,10 +1,24 @@
 --Definição dos tipos
 
 
+
+type Memory = [(Int,Int)]
+
 type Reg = Int
+data ULA = ULA{
+    acc :: Reg,
+    eqz :: Bool 
+} deriving Show
+
+data CPU = CPU{
+    ula :: ULA,
+    pc :: Reg,
+    memory :: Memory,
+    ir :: (Reg,Reg)
+}
 
 --LOD
-execLOD :: Int -> ([(Int,Int)], Reg, Bool) -> ([(Int,Int)], Int, Bool)
+execLOD :: Int -> (Memory, Reg, Bool) -> (Memory, Int, Bool)
 execLOD end (mem, acc, eqz) = (mem, readMem mem end, eqz)
 
 
@@ -14,14 +28,14 @@ execLOD end (mem, acc, eqz) = (mem, readMem mem end, eqz)
 -- fst -> primeiro elemento da tupla
 
 -- snd -> segundo elemento da tupla
-readMem :: [(Int,Int)] -> Int -> Int
+readMem :: Memory -> Int -> Int
 readMem (m:ms) end  
     | end == fst m = snd m
     | end /= fst m = readMem ms end    
 
 
 --Escrita da memória
-execSto :: [(Int,Int)] -> Int -> Reg -> [(Int,Int)]
+execSto :: Memory -> Int -> Reg -> Memory
 execSto (m:ms) end acc | end == fst m = [(fst m, acc)] ++ ms
                        | end /= fst m = m : execSto ms end acc
 
@@ -61,7 +75,7 @@ setAcc f end acc= f end acc
 
 
 
-exec :: Reg -> Bool -> [(Int,Int)] -> [(Int,Int)] 
+exec :: Reg -> Bool -> Memory -> Memory 
 exec acc eqz (m:ms)  | snd m == 2 = let (mem,acc , _) = execLOD (snd (head(ms))) ([m]++ms,acc,eqz)
                             in mem
         
