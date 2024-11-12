@@ -34,8 +34,8 @@ readMem (m:ms) end
 {-Carrega o conteúdo do endereço de memória <end> no
 registrador acumulador (ACC).-}
 
-execLOD :: CPU ->  CPU
-execLOD cpu = cpu {ula = (ula cpu){acc = value} , pc = pc cpu + 2}
+execLod :: CPU ->  CPU
+execLod cpu = cpu {ula = (ula cpu){acc = value} , pc = pc cpu + 2}
         where value = readMem (memory cpu) (snd(ir cpu))
 
 {-
@@ -92,9 +92,12 @@ Adiciona o conteúdo do endereço de memória <end> ao
 conteúdo armazenado no acumulador (ACC) e armazena a
 resposta no próprio acumulador
 -}
---execAdd :: CPU -> CPU
---execAdd cpu = if (acc+end) < 127 && (acc+end) > (-128)  then (acc+end)
-  --               else (-128)
+
+execAdd :: CPU -> CPU
+execAdd cpu = if (acc'+end) < 127 && (acc'+end) > (-128) then cpu{ula = (ula cpu){acc = (acc(ula cpu)) + end }, pc = pc cpu + 2}
+              else cpu{ula = (ula cpu){acc = -128}}
+              where acc' = acc(ula cpu)
+                    end = readMem (memory cpu) (snd(ir cpu))
 
 {-
 Subtrai o conteúdo do endereço de memória <end> do conteúdo
@@ -102,22 +105,24 @@ do acumulador (ACC) e armazena a resposta no próprio
 acumulador
 -}
 
-execSub :: Int -> Reg -> Int 
-execSub end acc = if (acc-end) < 127 && (acc-end) > (-128)  then (acc-end)
-                 else (-128)
+execSub :: CPU -> CPU
+execSub cpu = if (acc'-end) < 127 && (acc'-end) > (-128) then cpu{ula = (ula cpu){acc = (acc (ula cpu)) - end}, pc = pc cpu + 2}
+              else cpu{ula = (ula cpu){acc = -128}}
+              where acc' = acc(ula cpu)
+                    end = readMem (memory cpu) (snd(ir cpu)) 
 
 {-
 Não executa ação nenhuma (No OPeration)
 -}
 
-execNop :: Int
-execNop = 0
+execNop :: CPU -> CPU
+execNop cpu =  cpu{pc = pc cpu + 2}
 
 {-
 Encerra o ciclo de execução do processador (HaLT)
 -}
-execHlt :: Int 
-execHlt = -1
+execHlt :: CPU -> CPU 
+execHlt cpu = cpu{pc = -1}
 
 
 createMemory :: Memory
@@ -135,31 +140,58 @@ createCpu = CPU{
     ula = createUla,
     pc = 0,
     memory = createMemory,
-    ir = (0,1)
+    ir = (0 , 0)
 }
 
 finalMemory :: CPU -> Memory
 finalMemory cpu = memory cpu
 
-{-exec :: CPU -> CPU
+loadMemory :: Memory -> CPU -> CPU
+loadMemory [] cpu = cpu 
+loadMemory mem cpu = cpu{memory = mem}
+
+
+exec :: CPU -> CPU
 exec cpu = case fst (ir cpu) of
-    2  -> lod cpu
-    4  -> sto cpu
-    6  -> jmp cpu
-    8  -> jmz cpu
-    10 -> cpe cpu
-    14 -> add cpu
-    16 -> sub cpu
-    18 -> nop cpu
-    20 -> hlt cpu
--}
+    2  -> execLod cpu
+    4  -> execSto cpu
+    6  -> execJmp cpu
+    8  -> execJmz cpu
+    10 -> execCpe cpu
+    14 -> execAdd cpu
+    16 -> execSub cpu
+    18 -> execNop cpu
+    20 -> execHlt cpu
+    _ -> cpu
+
+busca :: CPU ->  (Reg,Reg)
+busca cpu = (snd(memory'!!pc'),snd(memory'!!(pc'+1)))
+        where memory' = memory cpu
+              pc' = pc cpu
+
+runCpu :: CPU -> CPU 
+runCpu cpu | opcode == 20 = cpu{ir = (20, snd(memory cpu!!((pc cpu) + 1)))}
+           | otherwise = runCpu nextCpu
+        where 
+            cpuWithIr = cpu { ir = busca cpu }
+            opcode = fst(ir cpuWithIr)
+            nextCpu = exec cpuWithIr
+
+        
+
+
 main  :: IO()
 
 --acc = posição 100
 
 main = do
+    let prog1 = [(0,2),(1,240),(2,14),(3,241),(4,4),(5,251),(6,20),(7,18),(240,0),(241,1),(251,0)]
     let c = createCpu
-    print c
+    let load = loadMemory prog1 c 
+    print load
+    let exc = runCpu load
+    
+    print exc
 
 
 
