@@ -35,7 +35,8 @@ readMem (m:ms) end
 registrador acumulador (ACC).-}
 
 execLod :: CPU ->  CPU
-execLod cpu = cpu {ula = (ula cpu){acc = value} , pc = pc cpu + 2}
+execLod cpu | acc (ula cpu) /= 0 = cpu {ula = (ula cpu){acc = value, eqz = False} , pc = pc cpu + 2}
+            | otherwise = cpu {ula = (ula cpu){acc = value, eqz = True} , pc = pc cpu + 2}
         where value = readMem (memory cpu) (snd(ir cpu))
 
 {-
@@ -69,8 +70,8 @@ execJmz end pc eqz = if pc == end && eqz == True then end
 -}
 
 execJmz :: CPU -> CPU
-execJmz cpu = if pc cpu == end && eqz(ula cpu) == True then cpu{pc = end} else cpu{pc = pc cpu + 2}
-                where end = readMem (memory cpu) (snd(ir cpu))
+execJmz cpu = if eqz(ula cpu) == True then cpu{pc = end} else cpu{pc = pc cpu + 2}
+                where end = (snd(ir cpu))
 
 
 {-
@@ -84,7 +85,7 @@ end acc = if acc == end then  0
 
 execCpe :: CPU -> CPU
 execCpe cpu = if acc(ula cpu) == end then cpu{ pc = pc cpu + 2, ula = (ula cpu) {acc = 0}} 
-            else cpu {ula = (ula cpu) {acc = 1}} 
+            else cpu {pc = pc cpu + 2,ula = (ula cpu) {acc = 1}} 
             where end = readMem (memory cpu) (snd(ir cpu))
 
 {-
@@ -94,8 +95,8 @@ resposta no próprio acumulador
 -}
 
 execAdd :: CPU -> CPU
-execAdd cpu = if (acc'+end) < 127 && (acc'+end) > (-128) then cpu{ula = (ula cpu){acc = (acc(ula cpu)) + end }, pc = pc cpu + 2}
-              else cpu{ula = (ula cpu){acc = -128}}
+execAdd cpu   | ((acc'+end) < 127 && (acc'+end) > (-128))= cpu{ula = (ula cpu){acc = (acc(ula cpu)) + end}, pc = pc cpu + 2}
+              |otherwise =  cpu{ula = (ula cpu){acc = -128}}
               where acc' = acc(ula cpu)
                     end = readMem (memory cpu) (snd(ir cpu))
 
@@ -106,8 +107,8 @@ acumulador
 -}
 
 execSub :: CPU -> CPU
-execSub cpu = if (acc'-end) < 127 && (acc'-end) > (-128) then cpu{ula = (ula cpu){acc = (acc (ula cpu)) - end}, pc = pc cpu + 2}
-              else cpu{ula = (ula cpu){acc = -128}}
+execSub cpu | ( (acc'-end) < 127 && (acc'-end) > (-128)) = cpu{ula = (ula cpu){acc = (acc (ula cpu)) - end}, pc = pc cpu + 2}
+            |otherwise =  cpu{ula = (ula cpu){acc = -128}}
               where acc' = acc(ula cpu)
                     end = readMem (memory cpu) (snd(ir cpu)) 
 
@@ -169,13 +170,18 @@ busca cpu = (snd(memory'!!pc'),snd(memory'!!(pc'+1)))
         where memory' = memory cpu
               pc' = pc cpu
 
+setFlag :: CPU -> CPU
+setFlag cpu = if acc(ula cpu) /= 0 then cpu{ula = (ula cpu){eqz = False}}
+              else cpu{ula = (ula cpu){eqz = True}}
+
 runCpu :: CPU -> CPU 
 runCpu cpu | opcode == 20 = cpu{ir = (20, snd(memory cpu!!((pc cpu) + 1)))}
            | otherwise = runCpu nextCpu
         where 
             cpuWithIr = cpu { ir = busca cpu }
+            settedCpu = setFlag cpuWithIr
             opcode = fst(ir cpuWithIr)
-            nextCpu = exec cpuWithIr
+            nextCpu = exec settedCpu
 
         
 
@@ -185,9 +191,16 @@ main  :: IO()
 --acc = posição 100
 
 main = do
+    
+
     let prog1 = [(0,2),(1,240),(2,14),(3,241),(4,4),(5,251),(6,20),(7,18),(240,0),(241,1),(251,0)]
     let c = createCpu
-    let load = loadMemory prog1 c 
+    let prog2 = [(0,2),(1,241),(2,4),(3,244),(4,8),(5,20),(6,2),(7,243),(8,14),(9,240),(10,4),(11,243),(12,2),(13,244),(14,16),(15,242),(16,4),(17,244),(18,6),(19,4),(20,2),(21,243),(22,4),(23,251),(24,20),(25,18),(240,3),(241,4),(242,1),(243,0),(244,0),(251,0)]
+    
+
+    let prog3 = [(0,2),(1,240),(2,10),(3,244),(4,8),(5,20),(6,2),(7,240),(8,14),(9,242),(10,4),(11,240),(12,2),(13,241),(14,14),(15,243),(16,4),(17,241),(18,6),(19,0),(20,2),(21,241),(22,4),(23,251),(24,20),(25,18),(240,0),(241,1),(242,1),(243,2),(244,5),(251,0)]
+
+    let load = loadMemory prog3 c 
     print load
     let exc = runCpu load
     
