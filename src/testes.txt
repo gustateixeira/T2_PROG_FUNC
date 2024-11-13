@@ -1,0 +1,72 @@
+1) Resp = A + B - 2
+enderecos:
+240 - A
+241 - B
+242 - 2
+251 - resultado final
+
+lista:
+[(0,2),(1,240),(2,14),(3,241),(4,16),(5,242),(6,4),(7,251),(8,20),(9,18),(240,12),(241,3),(242,2),(251,0)] = 12 + 3 -2
+
+Assembler:
+0 LOD 240
+2 ADD 241
+4 SUB 242
+6 STO 251
+8 HLT NOP
+
+2) Resp = A * B
+
+enderecos:
+240-A
+241-B
+242-p/subtrair 1
+243-p/resultado parcial (inicia em 0)
+244-recursao
+251-resultado final
+
+lista (3 * 4):
+[(0,2),(1,241),(2,4),(3,244),(4,8),(5,20),(6,2),(7,243),(8,14),(9,240),(10,4),(11,243),(12,2),(13,244),(14,16),(15,242),(16,4),(17,244),(18,6),(19,4),(20,2),(21,243),(22,4),(23,251),(24,20),(25,18),(240,3),(241,4),(242,1),(243,0),(244,0),(251,0)]
+
+Assembler:
+0 LOD 241 --inicia recursao com valor B.
+2 STO 244
+4 JMZ 20 --se for 0 vai pro fim. resultado parcial é 0 (X * 0)
+6 LOD 243
+8 ADD 240 --soma 1 vez A
+10 STO 243
+12 LOD 244 --diminui o contador
+14 SUB 242
+16 STO 244
+18 JMP 4 --recursao
+20 LOD 243 --coloca resultado parcial no final
+22 STO 251
+24 HLT NOP
+
+3) A = 0; Resp = 1; while(A < 5) { A = A + 1; Resp = Resp + 2; }
+
+enderecos:
+240-A (inicia em 0)
+241-Resp (inicia em 1)
+242-1
+243-2
+244-5
+251-resultado final
+
+lista:
+[(0,2),(1,240),(2,10),(3,244),(4,8),(5,20),(6,2),(7,240),(8,14),(9,242),(10,4),(11,240),(12,2),(13,241),(14,14),(15,243),(16,4),(17,241),(18,6),(19,0),(20,2),(21,241),(22,4),(23,251),(24,20),(25,18),(240,0),(241,1),(242,1),(243,2),(244,5),(251,0)]
+
+Assembler:
+0 LOD 240
+2 CPE 244 –compara 5 com A
+4 JMZ 20
+6 LOD 240 –a = a + 1
+8 ADD 242
+10 STO 240
+12 LOD 241 –resp = resp + 2
+14 ADD 243
+16 STO 241
+18 JMP 0
+20 LOD 241 –fim da recursao
+22 STO 251
+24 HLT NOP

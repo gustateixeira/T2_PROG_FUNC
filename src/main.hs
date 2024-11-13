@@ -1,6 +1,6 @@
 --Definição dos tipos
 
-
+import System.IO
 
 type Memory = [(Int,Int)]
 
@@ -152,8 +152,8 @@ loadMemory [] cpu = cpu
 loadMemory mem cpu = cpu{memory = mem}
 
 
-exec :: CPU -> CPU
-exec cpu = case fst (ir cpu) of
+decode :: CPU -> CPU
+decode cpu = case fst (ir cpu) of
     2  -> execLod cpu
     4  -> execSto cpu
     6  -> execJmp cpu
@@ -165,8 +165,8 @@ exec cpu = case fst (ir cpu) of
     20 -> execHlt cpu
     _ -> cpu
 
-busca :: CPU ->  (Reg,Reg)
-busca cpu = (snd(memory'!!pc'),snd(memory'!!(pc'+1)))
+fetch :: CPU ->  (Reg,Reg)
+fetch cpu = (snd(memory'!!pc'),snd(memory'!!(pc'+1)))
         where memory' = memory cpu
               pc' = pc cpu
 
@@ -174,17 +174,39 @@ setFlag :: CPU -> CPU
 setFlag cpu = if acc(ula cpu) /= 0 then cpu{ula = (ula cpu){eqz = False}}
               else cpu{ula = (ula cpu){eqz = True}}
 
-runCpu :: CPU -> CPU 
-runCpu cpu | opcode == 20 = cpu{ir = (20, snd(memory cpu!!((pc cpu) + 1)))}
-           | otherwise = runCpu nextCpu
-        where 
-            cpuWithIr = cpu { ir = busca cpu }
+filteredMemory :: Memory -> Memory
+filteredMemory [] = []
+filteredMemory m = filter(\(add,v) -> add >= 251 && v> 0) m
+
+runCpu :: CPU -> IO CPU 
+runCpu cpu = do
+
+        let cpuWithIr = cpu { ir = fetch cpu }
+            opcode = fst(ir cpuWithIr)            
             settedCpu = setFlag cpuWithIr
-            opcode = fst(ir cpuWithIr)
-            nextCpu = exec settedCpu
+            nextCpu = decode settedCpu                 
+            biggerthan251 = filteredMemory (memory nextCpu)
+        print biggerthan251
+        if opcode == 20
+            then return cpuWithIr
+        else runCpu nextCpu
 
         
 
+
+--transforma a lista numa tupla
+-- let[addr,val] significa que pega a linha e transforma ela numa lista de [endereco, valor]
+-- words(line) pega a linha e transforma ela numa lista das palavras
+-- map read(words line) pega a lista de palavras e transforma em uma lista de inteiros
+-- in (addr,val) coloca essa lista numa tupla
+parseLine :: String -> (Int,Int)
+parseLine line = let [addr, val] = map read(words line) in (addr,val)
+
+
+readFromFile :: FilePath -> IO Memory
+readFromFile path = do
+    content <- readFile path
+    return $ map parseLine (lines content)
 
 main  :: IO()
 
@@ -193,18 +215,14 @@ main  :: IO()
 main = do
     
 
-    let prog1 = [(0,2),(1,240),(2,14),(3,241),(4,4),(5,251),(6,20),(7,18),(240,0),(241,1),(251,0)]
-    let c = createCpu
-    let prog2 = [(0,2),(1,241),(2,4),(3,244),(4,8),(5,20),(6,2),(7,243),(8,14),(9,240),(10,4),(11,243),(12,2),(13,244),(14,16),(15,242),(16,4),(17,244),(18,6),(19,4),(20,2),(21,243),(22,4),(23,251),(24,20),(25,18),(240,3),(241,4),(242,1),(243,0),(244,0),(251,0)]
-    
-
-    let prog3 = [(0,2),(1,240),(2,10),(3,244),(4,8),(5,20),(6,2),(7,240),(8,14),(9,242),(10,4),(11,240),(12,2),(13,241),(14,14),(15,243),(16,4),(17,241),(18,6),(19,0),(20,2),(21,241),(22,4),(23,251),(24,20),(25,18),(240,0),(241,1),(242,1),(243,2),(244,5),(251,0)]
-
-    let load = loadMemory prog3 c 
-    print load
-    let exc = runCpu load
-    
-    print exc
+    prog1 <- readFromFile "input/input1.txt" 
+    prog2 <- readFromFile "input/input2.txt"
+    prog3 <- readFromFile "input/input3.txt"
+    let cpu = createCpu 
+    let cpuWithMemory = loadMemory prog3 cpu
+    let cpuFinal = runCpu cpuWithMemory
+    _ <- cpuFinal
+    return ()
 
 
 
