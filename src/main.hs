@@ -186,7 +186,10 @@ runCpu cpu = do
             settedCpu = setFlag cpuWithIr
             nextCpu = decode settedCpu                 
             biggerthan251 = filteredMemory (memory nextCpu)
-        print biggerthan251
+        if biggerthan251 /= []
+            then print $ snd $ head biggerthan251
+        else putStr "" 
+
         if opcode == 20
             then return cpuWithIr
         else runCpu nextCpu
@@ -214,15 +217,48 @@ main  :: IO()
 
 main = do
     
+    {-
+    1) Resp = A + B - 2 
+    enderecos:
+    240 - A
+    241 - B
+    242 - 2
+    251 - resultado final
+    
+    Assembler:
+    0 LOD 240
+    2 ADD 241
+    4 SUB 242
+    6 STO 251
+    8 HLT NOP
 
-    prog1 <- readFromFile "input/input1.txt" 
-    prog2 <- readFromFile "input/input2.txt"
-    prog3 <- readFromFile "input/input3.txt"
-    let cpu = createCpu 
-    let cpuWithMemory = loadMemory prog3 cpu
-    let cpuFinal = runCpu cpuWithMemory
-    _ <- cpuFinal
-    return ()
+    Resultado:
+    = 12 + 3 -2 = 13
+
+    -}
+    
+    
+    let commands = "Selecione qual exemplo:\n-> Digite {1} para -> 12 + 3 - 2 \n-> Digite {2} para 3 * 4\n-> Digite {3} para  A = 0; Resp = 1; while(A < 5) { A = A + 1; Resp = Resp + 2; }\n"
+    putStr commands
+    input <- readLn :: IO Int
+
+    prog <- if input == 1 then 
+                readFromFile "input/input1.txt" 
+            else if input == 2  then 
+                readFromFile "input/input2.txt"
+            else if input == 3 then 
+                readFromFile "input/input3.txt" 
+            else do
+                putStrLn "Entrada inválida"
+                return []
+    
+    if prog == [] then return ()
+        else do
+        let cpu = createCpu
+        let cpuWithMemory = loadMemory prog cpu
+        let cpuFinal = runCpu cpuWithMemory
+        _ <- cpuFinal
+        return ()
 
 
 
